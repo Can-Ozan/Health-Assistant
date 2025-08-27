@@ -14,6 +14,7 @@ import {
   AlertCircle,
   Eye
 } from "lucide-react";
+import { CameraStatus } from "./CameraStatus";
 
 interface PostureMonitorProps {
   isActive: boolean;
@@ -29,7 +30,7 @@ export const PostureMonitor = ({ isActive, score }: PostureMonitorProps) => {
 
   useEffect(() => {
     if (isActive) {
-      requestCameraPermission();
+      startCameraAndMonitoring();
     } else {
       stopCamera();
     }
@@ -39,45 +40,104 @@ export const PostureMonitor = ({ isActive, score }: PostureMonitorProps) => {
 
   // Simulated posture analysis
   useEffect(() => {
-    if (isActive && hasPermission) {
+    if (isActive && hasPermission && stream) {
       const interval = setInterval(() => {
         analyzePosture();
       }, 5000); // Her 5 saniyede bir analiz
 
       return () => clearInterval(interval);
     }
-  }, [isActive, hasPermission, score]);
+  }, [isActive, hasPermission, score, stream]);
+
+  const startCameraAndMonitoring = async () => {
+    console.log('Kamera başlatılıyor...');
+    await requestCameraPermission();
+  };
 
   const requestCameraPermission = async () => {
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
+      console.log('Kamera izni isteniyor...');
+      
+      // Önce mevcut cihazları kontrol et
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = devices.filter(device => device.kind === 'videoinput');
+      
+      console.log('Bulunan video cihazları:', videoDevices.length);
+      
+      if (videoDevices.length === 0) {
+        throw new Error('Kamera bulunamadı');
+      }
+
+      const constraints = {
         video: { 
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-          facingMode: 'user'
-        } 
-      });
+          width: { ideal: 1280, max: 1920 },
+          height: { ideal: 720, max: 1080 },
+          facingMode: 'user',
+          frameRate: { ideal: 30, max: 60 }
+        },
+        audio: false
+      };
+
+      console.log('Kamera stream başlatılıyor...', constraints);
+      
+      const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+      
+      console.log('Kamera stream başarılı:', mediaStream.getTracks().length, 'track');
       
       setStream(mediaStream);
       setHasPermission(true);
       
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
+        console.log('Video element stream atandı');
+        
+        // Video yüklendiğinde play et
+        videoRef.current.onloadedmetadata = () => {
+          console.log('Video metadata yüklendi, play ediliyor...');
+          videoRef.current?.play().catch(console.error);
+        };
       }
+      
     } catch (error) {
-      console.error('Kamera erişimi reddedildi:', error);
+      console.error('Kamera erişim hatası:', error);
+      
+      let errorMessage = 'Kamera erişimi başarısız';
+      
+      if (error instanceof Error) {
+        if (error.name === 'NotAllowedError') {
+          errorMessage = 'Kamera izni reddedildi. Lütfen tarayıcı ayarlarından kamera iznini etkinleştirin.';
+        } else if (error.name === 'NotFoundError') {
+          errorMessage = 'Kamera bulunamadı. Lütfen kameranızın bağlı olduğundan emin olun.';
+        } else if (error.name === 'NotReadableError') {
+          errorMessage = 'Kamera kullanımda veya erişilemiyor.';
+        } else if (error.name === 'OverconstrainedError') {
+          errorMessage = 'Kamera ayarları desteklenmiyor.';
+        }
+      }
+      
       setHasPermission(false);
+      setPostureWarnings([errorMessage]);
     }
   };
 
   const stopCamera = () => {
+    console.log('Kamera durduruluyor...');
+    
     if (stream) {
-      stream.getTracks().forEach(track => track.stop());
+      stream.getTracks().forEach(track => {
+        console.log('Track durduruluyor:', track.kind, track.label);
+        track.stop();
+      });
       setStream(null);
     }
+    
     if (videoRef.current) {
       videoRef.current.srcObject = null;
+      videoRef.current.pause();
     }
+    
+    setHasPermission(null);
+    console.log('Kamera durduruldu');
   };
 
   const analyzePosture = () => {
@@ -129,6 +189,9 @@ export const PostureMonitor = ({ isActive, score }: PostureMonitorProps) => {
 
   return (
     <div className="space-y-6">
+      {/* Kamera Sistem Durumu */}
+      <CameraStatus />
+      
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -143,33 +206,63 @@ export const PostureMonitor = ({ isActive, score }: PostureMonitorProps) => {
           {/* Kamera Feed */}
           <div className="relative bg-muted rounded-lg overflow-hidden">
             {hasPermission && stream ? (
-              <video
-                ref={videoRef}
-                autoPlay
-                muted
-                className="w-full h-64 object-cover"
-              />
+              <div className="relative">
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  muted
+                  playsInline
+                  className="w-full h-64 object-cover"
+                  onCanPlay={() => {
+                    console.log('Video canPlay event');
+                    if (videoRef.current) {
+                      videoRef.current.play().catch(console.error);
+                    }
+                  }}
+                  onError={(e) => {
+                    console.error('Video error:', e);
+                  }}
+                />
+                {/* Kamera aktif göstergesi */}
+                <div className="absolute top-2 left-2 flex items-center gap-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs">
+                  <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                  CANLI
+                </div>
+              </div>
+            ) : hasPermission === false ? (
+              <div className="w-full h-64 flex items-center justify-center">
+                <div className="text-center space-y-4">
+                  <CameraOff className="h-12 w-12 mx-auto text-destructive" />
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-destructive">
+                      Kamera Erişimi Reddedildi
+                    </p>
+                    <p className="text-xs text-muted-foreground max-w-xs">
+                      Duruş analizi için kamera erişimi gereklidir
+                    </p>
+                  </div>
+                  <Button variant="outline" onClick={requestCameraPermission}>
+                    <Camera className="h-4 w-4 mr-2" />
+                    Tekrar Dene
+                  </Button>
+                </div>
+              </div>
             ) : (
               <div className="w-full h-64 flex items-center justify-center">
-                {hasPermission === false ? (
-                  <div className="text-center space-y-2">
-                    <CameraOff className="h-12 w-12 mx-auto text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">
-                      Kamera erişimi gerekli
-                    </p>
-                    <Button variant="outline" onClick={requestCameraPermission}>
-                      <Camera className="h-4 w-4 mr-2" />
-                      Kameraya İzin Ver
-                    </Button>
+                <div className="text-center space-y-4">
+                  <div className="relative">
+                    <Monitor className="h-12 w-12 mx-auto text-primary animate-pulse" />
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full animate-ping"></div>
                   </div>
-                ) : (
-                  <div className="text-center space-y-2">
-                    <Monitor className="h-12 w-12 mx-auto text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">
-                      Monitoring başlatılıyor...
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">
+                      Kamera Erişimi İsteniyor...
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Lütfen tarayıcınızdan kamera iznini onaylayın
                     </p>
                   </div>
-                )}
+                </div>
               </div>
             )}
             
