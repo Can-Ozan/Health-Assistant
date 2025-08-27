@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { 
   Camera, 
   CameraOff, 
@@ -58,14 +59,13 @@ export const PostureMonitor = ({ isActive, score }: PostureMonitorProps) => {
     try {
       console.log('Kamera izni isteniyor...');
       
-      // Önce mevcut cihazları kontrol et
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const videoDevices = devices.filter(device => device.kind === 'videoinput');
-      
-      console.log('Bulunan video cihazları:', videoDevices.length);
-      
-      if (videoDevices.length === 0) {
-        throw new Error('Kamera bulunamadı');
+      // Cihazları kontrol et (bazı tarayıcılarda izin verilmeden boş dönebilir)
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(device => device.kind === 'videoinput');
+        console.log('Bulunan video cihazları (ön kontrol):', videoDevices.length);
+      } catch (e) {
+        console.log('Cihaz listesi alınamadı, getUserMedia ile devam edilecek');
       }
 
       const constraints = {
@@ -193,11 +193,41 @@ export const PostureMonitor = ({ isActive, score }: PostureMonitorProps) => {
       <CameraStatus />
       
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Camera className="h-5 w-5" />
-            Duruş Monitoring Sistemi
-          </CardTitle>
+        <CardHeader className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Camera className="h-5 w-5" />
+              Duruş Monitoring Sistemi
+            </div>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="hover-scale">
+                  <Settings className="h-4 w-4" />
+                  Ayarlar
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Kamera Ayarları</DialogTitle>
+                  <DialogDescription>
+                    Kamera iznini yenileyebilir ve akış ayarlarını düzenleyebilirsiniz.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-3">
+                  <Button onClick={requestCameraPermission} variant="wellness" className="w-full">
+                    <Camera className="h-4 w-4" />
+                    İzni Yenile ve Kamerayı Aç
+                  </Button>
+                  <p className="text-xs text-muted-foreground">
+                    İzin vermediyseniz tarayıcınızın site ayarlarından kamerayı etkinleştirin.
+                  </p>
+                </div>
+                <DialogFooter>
+                  <Button variant="secondary">Kapat</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
           <CardDescription>
             Gerçek zamanlı duruş analizi ve akıllı uyarılar
           </CardDescription>

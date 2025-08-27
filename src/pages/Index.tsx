@@ -36,6 +36,13 @@ const Index = () => {
     hoursWorked: 7.5
   });
 
+  // Posture sekmesine geçildiğinde otomatik başlat (izin istemek için)
+  useEffect(() => {
+    if (activeTab === "posture" && !isMonitoring) {
+      setIsMonitoring(true);
+    }
+  }, [activeTab, isMonitoring]);
+
   // Simüle edilmiş duruş skoru güncellemesi
   useEffect(() => {
     if (isMonitoring) {
