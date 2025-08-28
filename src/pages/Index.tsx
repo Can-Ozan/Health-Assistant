@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { useToast } from "@/components/ui/use-toast";
+import { User, Session } from '@supabase/supabase-js';
 import { 
   Monitor, 
   Camera, 
@@ -16,15 +18,28 @@ import {
   Pause,
   RotateCcw,
   Bell,
-  CheckCircle
+  CheckCircle,
+  LogOut,
+  User as UserIcon,
+  Trophy,
+  MessageSquare,
+  Globe
 } from "lucide-react";
 import { PostureMonitor } from "@/components/PostureMonitor";
 import { ExerciseGuide } from "@/components/ExerciseGuide";
 import { StreamerMode } from "@/components/StreamerMode";
 import { HealthStats } from "@/components/HealthStats";
 import { ReminderSystem } from "@/components/ReminderSystem";
+import AuthPage from "@/components/AuthPage";
+import AIAssistant from "@/components/AIAssistant";
+import LanguageSelector from "@/components/LanguageSelector";
+import Leaderboard from "@/components/Leaderboard";
+import FeedbackSystem from "@/components/FeedbackSystem";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [activeTab, setActiveTab] = useState("dashboard");
   const [postureScore, setPostureScore] = useState(85);
   const [isMonitoring, setIsMonitoring] = useState(false);
@@ -35,6 +50,7 @@ const Index = () => {
     breaksTaken: 8,
     hoursWorked: 7.5
   });
+  const { toast } = useToast();
 
   // Posture sekmesine geçildiğinde otomatik başlat (izin istemek için)
   useEffect(() => {
@@ -56,6 +72,24 @@ const Index = () => {
     }
   }, [isMonitoring]);
 
+  const handleAuthChange = (newUser: User | null, newSession: Session | null) => {
+    setUser(newUser);
+    setSession(newSession);
+  };
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    toast({
+      title: "Çıkış Yapıldı",
+      description: "Güvenli bir şekilde çıkış yaptınız.",
+    });
+  };
+
+  // Kullanıcı giriş yapmamışsa auth sayfasını göster
+  if (!user) {
+    return <AuthPage onAuthChange={handleAuthChange} />;
+  }
+
   const renderTabContent = () => {
     switch (activeTab) {
       case "dashboard":
@@ -68,6 +102,12 @@ const Index = () => {
         return <StreamerMode isActive={streamerMode} setIsActive={setStreamerMode} />;
       case "stats":
         return <HealthStats stats={todayStats} />;
+      case "ai-assistant":
+        return <AIAssistant user={user} />;
+      case "leaderboard":
+        return <Leaderboard user={user} />;
+      case "feedback":
+        return <FeedbackSystem user={user} />;
       default:
         return <DashboardContent />;
     }
@@ -243,8 +283,10 @@ const Index = () => {
                 { id: "dashboard", label: "Ana Sayfa", icon: Monitor },
                 { id: "posture", label: "Duruş", icon: Activity },
                 { id: "exercises", label: "Egzersizler", icon: Eye },
-                { id: "streamer", label: "Yayıncı", icon: Users },
-                { id: "stats", label: "İstatistikler", icon: Heart }
+                { id: "ai-assistant", label: "AI Asistan", icon: MessageSquare },
+                { id: "leaderboard", label: "Liderlik", icon: Trophy },
+                { id: "stats", label: "İstatistikler", icon: Heart },
+                { id: "feedback", label: "Geri Bildirim", icon: MessageSquare }
               ].map(({ id, label, icon: Icon }) => (
                 <Button
                   key={id}
@@ -259,9 +301,14 @@ const Index = () => {
             </div>
 
             <div className="flex items-center space-x-2">
+              <LanguageSelector user={user} />
               <Badge variant={isMonitoring ? "default" : "secondary"}>
                 {isMonitoring ? "Monitoring" : "Offline"}
               </Badge>
+              <Button variant="outline" size="sm" onClick={handleSignOut}>
+                <LogOut className="h-4 w-4 mr-1" />
+                Çıkış
+              </Button>
             </div>
           </div>
         </div>
