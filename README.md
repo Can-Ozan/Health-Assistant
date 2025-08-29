@@ -1,118 +1,118 @@
-# 🏥 ErgoAsistan - Akıllı Ergonomi ve Sağlık Sistemi
+# 🏥 ErgoAssistant - Smart Ergonomics and Health System
 
-## 📋 Proje Hakkında
+## 📋 About the Project
 
-ErgoAsistan, evden çalışan profesyoneller için geliştirilmiş akıllı bir sağlık ve ergonomi sistemidir. 🖥️ Bilgisayar başında geçirilen uzun saatlerin olumsuz etkilerini minimize etmek ve sağlıklı çalışma alışkanlıkları kazandırmak amacıyla tasarlanmıştır.
+ErgoAsistan is a smart health and ergonomics system developed for professionals working from home. 🖥️ It is designed to minimize the negative effects of long hours spent at the computer and to promote healthy work habits.
 
-## ✨ Özellikler
+## ✨ Features
 
-### 🎯 Ana Özellikler
-- **Gerçek Zamanlı Duruş Takibi** 📸 - Kamera ile duruş analizi ve uyarılar
-- **AI Asistan** 🤖 - Kişiselleştirilmiş sağlık önerileri
-- **Çoklu Dil Desteği** 🌍 - 12+ dil seçeneği
-- **Karanlık/Açık Tema** 🌓 - Göz dostu arayüz
-- **Akıllı Hatırlatmalar** ⏰ - Kullanıcı tanımlı egzersiz ve mola hatırlatıcıları
+### 🎯 Main Features
+- **Real-Time Posture Tracking** 📸 - Camera-based posture analysis and alerts
+- **AI Assistant** 🤖 - Personalized health recommendations
+- **Multi-Language Support** 🌍 - 12+ language options
+- **Dark/Light Theme** 🌓 - Eye-friendly interface
+- **Smart Reminders** ⏰ - User-defined exercise and break reminders
 
-### 📊 İzleme ve Analiz
-- **20 Saniye Duruş Taraması** - Detaylı rapor oluşturma
-- **Gerçekçi Çalışma Süresi Takibi** - Günlük ekran süresi analizi
-- **Liderlik Tablosu** 🏆 - Gamifikasyon sistemi
-- **Sağlık İstatistikleri** 📈 - Gelişim takibi
+### 📊 Monitoring and Analysis
+- **20-Second Standby Scan** - Generate detailed reports
+- **Realistic Work Time Tracking** - Daily screen time analysis
+- **Leaderboard** 🏆 - Gamification system
+- **Health Statistics** 📈 - Development tracking
 
-### 🎮 Gamifikasyon
-- **Rozet Sistemi** 🏅 - Başarı rozetleri
-- **Puan Sistemi** 🎯 - Aktivite bazlı puanlama
-- **Sosyal Özellikler** 👥 - Arkadaşlarla yarışma
+### 🎮 Gamification
+- **Badge System** 🏅 - Achievement badges
+- **Points System** 🎯 - Activity-based scoring
+- **Social Features** 👥 - Compete with friends
 
-## 🚀 Teknoloji Stack
+## 🚀 Technology Stack
 
 - **Frontend**: React 18 + TypeScript
 - **UI Framework**: Tailwind CSS + shadcn/ui
 - **Backend**: Supabase (PostgreSQL + Edge Functions)
 - **AI**: OpenAI GPT API
-- **Kamera İşleme**: WebRTC + Canvas API
-- **Tema Sistemi**: CSS Variables + Dark Mode
-- **İnternasyonalizasyon**: Custom i18n Hook
+- **Camera Processing**: WebRTC + Canvas API
+- **Theme System**: CSS Variables + Dark Mode
+- **Internationalization**: Custom i18n Hook
 
-## 📱 Kurulum
+## 📱 Installation
 
-### Gereksinimler
+### Requirements
 - Node.js 18+
 - npm veya yarn
-- Modern bir web tarayıcısı (Chrome, Firefox, Safari)
+- A modern web browser (Chrome, Firefox, Safari)
 
-### Yerel Geliştirme
+### Local Development
 
-1. **Repo'yu klonlayın**
+1. **Clone the repo**
 ```bash
-git clone https://github.com/kullanici-adi/ergoasistan.git
-cd ergoasistan
+git clone https://github.com/Can-Ozan/Health-Assistant.git
+cd Health-Assistant
 ```
 
-2. **Bağımlılıkları yükleyin**
+2. **Load the dependencies**
 ```bash
 npm install
 ```
 
-3. **Geliştirme sunucusunu başlatın**
+3. **Start the development server**
 ```bash
 npm run dev
 ```
 
-4. **Tarayıcıda açın**
+4. **Open in browser**
 ```
 http://localhost:5173
 ```
 
-## 🔧 Yapılandırma
+## 🔧 Configuration
 
-### Supabase Kurulumu
-1. [Supabase](https://supabase.io) hesabı oluşturun
-2. Yeni proje oluşturun
-3. Veritabanı şemasını `supabase/migrations/` klasöründeki dosyalarla ayarlayın
-4. API anahtarlarını `.env` dosyasına ekleyin
+### Supabase Installation
+1. [Supabase](https://supabase.io) create an account
+2. Create a new project
+3. Database schema `supabase/migrations/` Set up the files in the folder
+4. API keys `.env` add to the file
 
 ### OpenAI API
-1. [OpenAI](https://openai.com) API anahtarı alın
-2. Supabase Edge Functions secrets bölümünde `OPENAI_API_KEY` ekleyin
+1. [OpenAI](https://openai.com) Get API key
+2. In the Supabase Edge Functions secrets section `OPENAI_API_KEY` add
 
-## 📂 Proje Yapısı
+## 📂 Project Structure
 
 ```
 src/
-├── components/          # React bileşenleri
-│   ├── ui/             # Temel UI bileşenleri (shadcn)
-│   ├── AIAssistant.tsx # AI asistan bileşeni
-│   ├── PostureMonitor.tsx # Duruş takip sistemi
+├── components/          # React components
+│   ├── ui/             # Basic UI components (shadcn)
+│   ├── AIAssistant.tsx # AI assistant component
+│   ├── PostureMonitor.tsx # Posture tracking system
 │   └── ...
 ├── hooks/              # Custom React hooks
-├── pages/              # Sayfa bileşenleri
-├── lib/                # Yardımcı fonksiyonlar
-└── integrations/       # Supabase entegrasyonu
+├── pages/              # Page components
+├── lib/                # Auxiliary functions
+└── integrations/       # Supabase integration
 
 supabase/
 ├── functions/          # Edge Functions
-├── migrations/         # Veritabanı migration'ları
-└── config.toml        # Supabase yapılandırması
+├── migrations/         # Database migrations
+└── config.toml        # Supabase configuration
 ```
 
-## 🎨 Tema Sistemi
+## 🎨 Theme System
 
-Proje, modern ve göz dostu bir tema sistemine sahiptir:
+The project features a modern and visually appealing theme system:
 
-- **Açık Tema** ☀️ - Gündüz kullanımı için
-- **Karanlık Tema** 🌙 - Gece kullanımı için
-- **Sistem Teması** 💻 - İşletim sistemi ayarını takip eder
+- **Light Theme** ☀️ - For daytime use
+- **Dark Theme** 🌙 - For nighttime use
+- **System Theme** 💻 - Follows the operating system settings
 
-### Özelleştirilmiş Renkler
-- **Wellness Yeşili** 🟢 - Sağlık ve huzur
-- **Energy Turuncusu** 🟠 - Enerji ve motivasyon
-- **Calm Mavisi** 🔵 - Sakinlik ve odaklanma
+### Custom Colors
+- **Wellness Green** 🟢 - Health and peace
+- **Energy Orange** 🟠 - Energy and motivation
+- **Calm Blue** 🔵 - Calmness and focus
 
-## 🌍 Dil Desteği
+## 🌍 Language Support
 
-Desteklenen Diller:
-- 🇹🇷 Türkçe
+Supported Languages:
+- 🇹🇷 Turkish
 - 🇺🇸 English
 - 🇩🇪 Deutsch
 - 🇫🇷 Français
@@ -125,54 +125,54 @@ Desteklenen Diller:
 - 🇨🇳 中文
 - 🇸🇦 العربية
 
-## 📊 Özellik Detayları
+## 📊 Feature Details
 
-### Duruş Takibi
-- WebRTC ile kamera erişimi
-- 20 saniye sürekli tarama
-- Boyun açısı, omuz simetrisi analizi
-- Gerçek zamanlı uyarılar
-- Detaylı rapor oluşturma
+### Posture Tracking
+- Camera access with WebRTC
+- 20 seconds continuous scanning
+- Neck angle, shoulder symmetry analysis
+- Real-time alerts
+- Creating detailed reports
 
-### AI Asistan
-- OpenAI GPT-4 entegrasyonu
-- Kişiselleştirilmiş öneriler
-- Sohbet geçmişi
-- Ergonomi danışmanlığı
+### AI Assistant
+- OpenAI GPT-4 integration
+- Personalized recommendations
+- Chat history
+- Ergonomic consulting
 
-### Gamifikasyon
-- Günlük hedef sistemi
-- Başarı rozetleri
-- Sosyal liderlik tablosu
-- İlerleme takibi
+### Gamification
+- Daily target system
+- Achievement badges
+- Social leadership chart
+- Progress tracking
 
-## 🤝 Katkıda Bulunma
+## 🤝 Contribution
 
-1. Fork edin 🍴
-2. Feature branch oluşturun (`git checkout -b feature/amazing-feature`)
-3. Değişikliklerinizi commit edin (`git commit -m 'Add amazing feature'`)
-4. Branch'inizi push edin (`git push origin feature/amazing-feature`)
-5. Pull Request oluşturun 📝
+1. Fork it 🍴
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push your branch (`git push origin feature/amazing-feature`)
+5. Create a Pull Request 📝
 
-## 📧 İletişim
+## 📧 Contact
 
-- **Geliştirici**: [GitHub Profili](https://github.com/kullanici-adi)
-- **E-posta**: your.email@example.com
-- **LinkedIn**: [Profil Linki](https://linkedin.com/in/your-profile)
+- **Developer**: [GitHub Profili](https://github.com/Can-Ozan)
+- **Email**: yusufcanozan9@gmail.com
+- **LinkedIn**: [Profil Linki](https://linkedin.com/in/yusufcanozan)
 
-## 📄 Lisans
+## 📄 License
 
-Bu proje MIT lisansı altında lisanslanmıştır. Detaylar için `LICENSE` dosyasına bakınız.
+This project is licensed under the MIT License. For details, see the `LICENSE` file.
 
-## 🙏 Teşekkürler
+## 🙏 Thank you
 
-- Supabase ekibine harika BaaS hizmeti için
-- OpenAI'ya güçlü AI API'si için
-- shadcn/ui ekibine beautiful components için
-- Tailwind CSS ekibine flexible styling için
+- To the Supabase team for their excellent BaaS service
+- To OpenAI for their powerful AI API
+- To the shadcn/ui team for their beautiful components
+- To the Tailwind CSS team for flexible styling
 
 ---
 
-💡 **Not**: Bu proje sürekli geliştirilmektedir. Yeni özellikler ve iyileştirmeler için GitHub'da takip edin!
+💡 **Note**: This project is under continuous development. Follow us on GitHub for new features and improvements!
 
-🌟 **Projeyi beğendiyseniz yıldızlamayı unutmayın!**
+🌟 **If you like the project, don't forget to star it!**
