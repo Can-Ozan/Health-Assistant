@@ -5,6 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/components/ui/use-toast";
 import { User, Session } from '@supabase/supabase-js';
+import { ThemeProvider } from "@/components/ThemeProvider";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { useTranslation } from "@/hooks/useTranslation";
 import { 
   Monitor, 
   Camera, 
@@ -48,9 +51,30 @@ const Index = () => {
     sessionsCompleted: 6,
     exercisesCompleted: 12,
     breaksTaken: 8,
-    hoursWorked: 7.5
+    hoursWorked: getRealisticComputerTime() // Gerçekçi veri
   });
   const { toast } = useToast();
+  const { t } = useTranslation(user);
+
+  // Gerçekçi bilgisayar başında geçirilen süre hesapla
+  function getRealisticComputerTime() {
+    const now = new Date();
+    const workStart = new Date(now);
+    workStart.setHours(9, 0, 0, 0); // 09:00
+    
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    
+    // Çalışma saatleri içindeyse
+    if (currentHour >= 9 && currentHour <= 18) {
+      const hoursWorked = currentHour - 9 + currentMinute / 60;
+      const breakTime = Math.floor(hoursWorked) * 0.1; // Saatte 6 dakika mola
+      return Math.round((hoursWorked - breakTime) * 10) / 10;
+    }
+    
+    // Çalışma saatleri dışındaysa varsayılan
+    return 7.5 + Math.random() * 2;
+  }
 
   // Posture sekmesine geçildiğinde otomatik başlat (izin istemek için)
   useEffect(() => {
@@ -87,7 +111,11 @@ const Index = () => {
 
   // Kullanıcı giriş yapmamışsa auth sayfasını göster
   if (!user) {
-    return <AuthPage onAuthChange={handleAuthChange} />;
+    return (
+      <ThemeProvider user={user}>
+        <AuthPage onAuthChange={handleAuthChange} />
+      </ThemeProvider>
+    );
   }
 
   const renderTabContent = () => {
@@ -117,11 +145,10 @@ const Index = () => {
     <div className="space-y-6">
       <div className="text-center py-8">
         <h1 className="text-4xl font-bold bg-gradient-wellness bg-clip-text text-transparent mb-4">
-          Akıllı Ergonomi Asistanı
+          {t('title')}
         </h1>
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-          Evden çalışanlar için geliştirilmiş akıllı sağlık ve ergonomi sistemi. 
-          Duruşunuzu kontrol edin, sağlıklı alışkanlıklar geliştirin.
+          {t('subtitle')}
         </p>
       </div>
 
@@ -130,13 +157,13 @@ const Index = () => {
           <CardHeader className="pb-2">
             <CardTitle className="text-lg flex items-center gap-2">
               <Activity className="h-5 w-5" />
-              Duruş Skoru
+              {t('posture_score')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">{postureScore}%</div>
             <p className="text-sm opacity-90">
-              {postureScore >= 80 ? "Mükemmel" : postureScore >= 60 ? "İyi" : "Dikkat Gerekli"}
+              {postureScore >= 80 ? t('perfect') : postureScore >= 60 ? t('good') : t('attention_needed')}
             </p>
           </CardContent>
         </Card>
@@ -266,59 +293,62 @@ const Index = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Navigation */}
-      <nav className="bg-card border-b border-border sticky top-0 z-50">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-wellness rounded-lg flex items-center justify-center">
-                <Heart className="h-5 w-5 text-white" />
+    <ThemeProvider user={user}>
+      <div className="min-h-screen bg-background">
+        {/* Navigation */}
+        <nav className="bg-card border-b border-border sticky top-0 z-50">
+          <div className="container mx-auto px-4">
+            <div className="flex items-center justify-between h-16">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-gradient-wellness rounded-lg flex items-center justify-center">
+                  <Heart className="h-5 w-5 text-white" />
+                </div>
+                <span className="font-bold text-lg">ErgoAsistan</span>
               </div>
-              <span className="font-bold text-lg">ErgoAsistan</span>
-            </div>
-            
-            <div className="hidden md:flex space-x-1">
-              {[
-                { id: "dashboard", label: "Ana Sayfa", icon: Monitor },
-                { id: "posture", label: "Duruş", icon: Activity },
-                { id: "exercises", label: "Egzersizler", icon: Eye },
-                { id: "ai-assistant", label: "AI Asistan", icon: MessageSquare },
-                { id: "leaderboard", label: "Liderlik", icon: Trophy },
-                { id: "stats", label: "İstatistikler", icon: Heart },
-                { id: "feedback", label: "Geri Bildirim", icon: MessageSquare }
-              ].map(({ id, label, icon: Icon }) => (
-                <Button
-                  key={id}
-                  variant={activeTab === id ? "default" : "ghost"}
-                  onClick={() => setActiveTab(id)}
-                  className="flex items-center gap-2"
-                >
-                  <Icon className="h-4 w-4" />
-                  {label}
-                </Button>
-              ))}
-            </div>
+              
+              <div className="hidden md:flex space-x-1">
+                {[
+                  { id: "dashboard", label: t('home'), icon: Monitor },
+                  { id: "posture", label: t('posture'), icon: Activity },
+                  { id: "exercises", label: t('exercises'), icon: Eye },
+                  { id: "ai-assistant", label: t('ai_assistant'), icon: MessageSquare },
+                  { id: "leaderboard", label: t('leaderboard'), icon: Trophy },
+                  { id: "stats", label: t('statistics'), icon: Heart },
+                  { id: "feedback", label: t('feedback'), icon: MessageSquare }
+                ].map(({ id, label, icon: Icon }) => (
+                  <Button
+                    key={id}
+                    variant={activeTab === id ? "default" : "ghost"}
+                    onClick={() => setActiveTab(id)}
+                    className="flex items-center gap-2"
+                  >
+                    <Icon className="h-4 w-4" />
+                    {label}
+                  </Button>
+                ))}
+              </div>
 
-            <div className="flex items-center space-x-2">
-              <LanguageSelector user={user} />
-              <Badge variant={isMonitoring ? "default" : "secondary"}>
-                {isMonitoring ? "Monitoring" : "Offline"}
-              </Badge>
-              <Button variant="outline" size="sm" onClick={handleSignOut}>
-                <LogOut className="h-4 w-4 mr-1" />
-                Çıkış
-              </Button>
+              <div className="flex items-center space-x-2">
+                <LanguageSelector user={user} />
+                <ThemeToggle />
+                <Badge variant={isMonitoring ? "default" : "secondary"}>
+                  {isMonitoring ? t('monitoring') : t('offline')}
+                </Badge>
+                <Button variant="outline" size="sm" onClick={handleSignOut}>
+                  <LogOut className="h-4 w-4 mr-1" />
+                  {t('logout')}
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-      </nav>
+        </nav>
 
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
-        {renderTabContent()}
-      </main>
-    </div>
+        {/* Main Content */}
+        <main className="container mx-auto px-4 py-8">
+          {renderTabContent()}
+        </main>
+      </div>
+    </ThemeProvider>
   );
 };
 

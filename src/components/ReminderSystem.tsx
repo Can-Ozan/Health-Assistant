@@ -2,6 +2,13 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/components/ui/use-toast";
 import { 
   Bell, 
   Eye, 
@@ -11,7 +18,9 @@ import {
   X, 
   Timer,
   Coffee,
-  Activity
+  Activity,
+  Plus,
+  Edit
 } from "lucide-react";
 
 interface Reminder {
@@ -25,47 +34,19 @@ interface Reminder {
 }
 
 export const ReminderSystem = () => {
-  const [activeReminders, setActiveReminders] = useState<Reminder[]>([
-    {
-      id: "eye-1",
-      type: "eye",
-      title: "Göz Egzersizi Zamanı",
-      message: "20-20-20 kuralını uygulamanın zamanı geldi",
-      timeLeft: 180,
-      totalTime: 1200, // 20 dakika
-      priority: "medium"
-    },
-    {
-      id: "break-1",
-      type: "break",
-      title: "Kısa Mola",
-      message: "5 dakikalık mola vermenizi öneriyoruz",
-      timeLeft: 300,
-      totalTime: 1800, // 30 dakika
-      priority: "high"
-    }
-  ]);
-
-  const [upcomingReminders, setUpcomingReminders] = useState([
-    {
-      type: "stretch",
-      title: "Esneme Hareketi",
-      time: "8 dakika",
-      icon: RotateCcw
-    },
-    {
-      type: "posture",
-      title: "Duruş Kontrolü",
-      time: "15 dakika",
-      icon: Activity
-    },
-    {
-      type: "eye",
-      title: "Göz Dinlendirme",
-      time: "22 dakika",
-      icon: Eye
-    }
-  ]);
+  const [activeReminders, setActiveReminders] = useState<Reminder[]>([]);
+  const [userReminders, setUserReminders] = useState<any[]>([]);
+  const [newReminderDialog, setNewReminderDialog] = useState(false);
+  const [editReminderDialog, setEditReminderDialog] = useState(false);
+  const [selectedReminder, setSelectedReminder] = useState<any>(null);
+  const [reminderForm, setReminderForm] = useState({
+    title: "",
+    message: "",
+    type: "custom",
+    interval: 30,
+    priority: "medium"
+  });
+  const { toast } = useToast();
 
   // Timer effect
   useEffect(() => {
@@ -80,6 +61,107 @@ export const ReminderSystem = () => {
 
     return () => clearInterval(interval);
   }, []);
+
+  // Kullanıcı hatırlatıcılarını yükle
+  useEffect(() => {
+    loadUserReminders();
+  }, []);
+
+  const loadUserReminders = () => {
+    // localStorage'dan kullanıcı hatırlatıcıları yükle
+    const saved = localStorage.getItem('user_reminders');
+    if (saved) {
+      setUserReminders(JSON.parse(saved));
+    }
+  };
+
+  const saveUserReminders = (reminders: any[]) => {
+    localStorage.setItem('user_reminders', JSON.stringify(reminders));
+    setUserReminders(reminders);
+  };
+
+  const addReminder = () => {
+    if (!reminderForm.title || !reminderForm.message) {
+      toast({
+        title: "Hata",
+        description: "Lütfen tüm alanları doldurun.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const newReminder = {
+      id: Date.now().toString(),
+      ...reminderForm,
+      createdAt: new Date()
+    };
+
+    const updatedReminders = [...userReminders, newReminder];
+    saveUserReminders(updatedReminders);
+
+    setReminderForm({
+      title: "",
+      message: "",
+      type: "custom",
+      interval: 30,
+      priority: "medium"
+    });
+    
+    setNewReminderDialog(false);
+    
+    toast({
+      title: "Başarılı",
+      description: "Hatırlatıcı başarıyla eklendi."
+    });
+  };
+
+  const deleteReminder = (id: string) => {
+    const updatedReminders = userReminders.filter(r => r.id !== id);
+    saveUserReminders(updatedReminders);
+    
+    toast({
+      title: "Başarılı",
+      description: "Hatırlatıcı silindi."
+    });
+  };
+
+  const editReminder = (reminder: any) => {
+    setSelectedReminder(reminder);
+    setReminderForm({
+      title: reminder.title,
+      message: reminder.message,
+      type: reminder.type,
+      interval: reminder.interval,
+      priority: reminder.priority
+    });
+    setEditReminderDialog(true);
+  };
+
+  const updateReminder = () => {
+    if (!reminderForm.title || !reminderForm.message) {
+      toast({
+        title: "Hata",
+        description: "Lütfen tüm alanları doldurun.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const updatedReminders = userReminders.map(r => 
+      r.id === selectedReminder.id 
+        ? { ...r, ...reminderForm }
+        : r
+    );
+    
+    saveUserReminders(updatedReminders);
+    setEditReminderDialog(false);
+    setSelectedReminder(null);
+    
+    toast({
+      title: "Başarılı",
+      description: "Hatırlatıcı güncellendi."
+    });
+  };
 
   const dismissReminder = (id: string) => {
     setActiveReminders(prev => prev.filter(reminder => reminder.id !== id));
@@ -209,32 +291,186 @@ export const ReminderSystem = () => {
         </div>
       )}
 
-      {/* Yaklaşan Hatırlatıcılar */}
+      {/* Kullanıcı Hatırlatıcıları */}
       <div className="space-y-3">
-        <h4 className="font-medium text-sm flex items-center gap-2">
-          <Timer className="h-4 w-4" />
-          Yaklaşan Etkinlikler
-        </h4>
+        <div className="flex items-center justify-between">
+          <h4 className="font-medium text-sm flex items-center gap-2">
+            <Timer className="h-4 w-4" />
+            Hatırlatıcılarım
+          </h4>
+          <Dialog open={newReminderDialog} onOpenChange={setNewReminderDialog}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Plus className="h-4 w-4 mr-1" />
+                Ekle
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Yeni Hatırlatıcı</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="title">Başlık</Label>
+                  <Input
+                    id="title"
+                    value={reminderForm.title}
+                    onChange={(e) => setReminderForm(prev => ({ ...prev, title: e.target.value }))}
+                    placeholder="Hatırlatıcı başlığı"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="message">Mesaj</Label>
+                  <Textarea
+                    id="message"
+                    value={reminderForm.message}
+                    onChange={(e) => setReminderForm(prev => ({ ...prev, message: e.target.value }))}
+                    placeholder="Hatırlatıcı mesajı"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="interval">Aralık (dakika)</Label>
+                    <Input
+                      id="interval"
+                      type="number"
+                      value={reminderForm.interval}
+                      onChange={(e) => setReminderForm(prev => ({ ...prev, interval: parseInt(e.target.value) || 30 }))}
+                      min="1"
+                      max="480"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="priority">Öncelik</Label>
+                    <Select value={reminderForm.priority} onValueChange={(value) => setReminderForm(prev => ({ ...prev, priority: value }))}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">Düşük</SelectItem>
+                        <SelectItem value="medium">Orta</SelectItem>
+                        <SelectItem value="high">Yüksek</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setNewReminderDialog(false)}>İptal</Button>
+                <Button onClick={addReminder}>Ekle</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+        
         <div className="space-y-2">
-          {upcomingReminders.map((reminder, index) => {
-            const Icon = reminder.icon;
-            return (
+          {userReminders.length === 0 ? (
+            <Card>
+              <CardContent className="p-4 text-center">
+                <p className="text-sm text-muted-foreground mb-2">
+                  Henüz hatırlatıcı eklememişsiniz
+                </p>
+                <Button variant="outline" size="sm" onClick={() => setNewReminderDialog(true)}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  İlk hatırlatıcınızı ekleyin
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            userReminders.map((reminder) => (
               <div
-                key={index}
+                key={reminder.id}
                 className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg"
               >
-                <div className="flex items-center gap-3">
-                  <Icon className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">{reminder.title}</span>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-sm font-medium">{reminder.title}</span>
+                    <Badge variant="outline" className="text-xs">
+                      {reminder.interval}dk
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{reminder.message}</p>
                 </div>
-                <Badge variant="outline" className="text-xs">
-                  {reminder.time}
-                </Badge>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => editReminder(reminder)}
+                  >
+                    <Edit className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => deleteReminder(reminder.id)}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
               </div>
-            );
-          })}
+            ))
+          )}
         </div>
       </div>
+
+      {/* Düzenleme Dialog */}
+      <Dialog open={editReminderDialog} onOpenChange={setEditReminderDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Hatırlatıcıyı Düzenle</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="edit-title">Başlık</Label>
+              <Input
+                id="edit-title"
+                value={reminderForm.title}
+                onChange={(e) => setReminderForm(prev => ({ ...prev, title: e.target.value }))}
+                placeholder="Hatırlatıcı başlığı"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-message">Mesaj</Label>
+              <Textarea
+                id="edit-message"
+                value={reminderForm.message}
+                onChange={(e) => setReminderForm(prev => ({ ...prev, message: e.target.value }))}
+                placeholder="Hatırlatıcı mesajı"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit-interval">Aralık (dakika)</Label>
+                <Input
+                  id="edit-interval"
+                  type="number"
+                  value={reminderForm.interval}
+                  onChange={(e) => setReminderForm(prev => ({ ...prev, interval: parseInt(e.target.value) || 30 }))}
+                  min="1"
+                  max="480"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-priority">Öncelik</Label>
+                <Select value={reminderForm.priority} onValueChange={(value) => setReminderForm(prev => ({ ...prev, priority: value }))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Düşük</SelectItem>
+                    <SelectItem value="medium">Orta</SelectItem>
+                    <SelectItem value="high">Yüksek</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditReminderDialog(false)}>İptal</Button>
+            <Button onClick={updateReminder}>Güncelle</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Hızlı Eylemler */}
       <div className="space-y-2">

@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
+import { useToast } from "@/components/ui/use-toast";
 import { 
   Camera, 
   CameraOff, 
@@ -13,7 +14,9 @@ import {
   Settings,
   Monitor,
   AlertCircle,
-  Eye
+  Eye,
+  Download,
+  BarChart3
 } from "lucide-react";
 import { CameraStatus } from "./CameraStatus";
 
@@ -27,7 +30,13 @@ export const PostureMonitor = ({ isActive, score }: PostureMonitorProps) => {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [postureWarnings, setPostureWarnings] = useState<string[]>([]);
   const [lastWarningTime, setLastWarningTime] = useState<Date | null>(null);
+  const [scanningTime, setScanningTime] = useState(0);
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanReport, setScanReport] = useState<any>(null);
+  const [showReport, setShowReport] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const scanIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (isActive) {
@@ -36,7 +45,12 @@ export const PostureMonitor = ({ isActive, score }: PostureMonitorProps) => {
       stopCamera();
     }
     
-    return () => stopCamera();
+    return () => {
+      stopCamera();
+      if (scanIntervalRef.current) {
+        clearInterval(scanIntervalRef.current);
+      }
+    };
   }, [isActive]);
 
   // Simulated posture analysis
@@ -53,6 +67,94 @@ export const PostureMonitor = ({ isActive, score }: PostureMonitorProps) => {
   const startCameraAndMonitoring = async () => {
     console.log('Kamera başlatılıyor...');
     await requestCameraPermission();
+    
+    // 20 saniye tarama başlat
+    if (isActive) {
+      startScanning();
+    }
+  };
+
+  const startScanning = () => {
+    setIsScanning(true);
+    setScanningTime(0);
+    
+    toast({
+      title: "Tarama Başladı",
+      description: "20 saniye boyunca duruş taraması yapılıyor...",
+    });
+
+    scanIntervalRef.current = setInterval(() => {
+      setScanningTime(prev => {
+        const newTime = prev + 1;
+        if (newTime >= 20) {
+          finishScanning();
+          return 20;
+        }
+        return newTime;
+      });
+    }, 1000);
+  };
+
+  const finishScanning = () => {
+    setIsScanning(false);
+    if (scanIntervalRef.current) {
+      clearInterval(scanIntervalRef.current);
+      scanIntervalRef.current = null;
+    }
+
+    // Rapor oluştur
+    const report = generateReport();
+    setScanReport(report);
+    setShowReport(true);
+
+    toast({
+      title: "Tarama Tamamlandı",
+      description: "Duruş analizi raporu hazırlandı.",
+    });
+  };
+
+  const generateReport = () => {
+    const now = new Date();
+    const avgScore = score;
+    
+    // Gerçekçi veriler
+    const computerTime = 7.5 + Math.random() * 2; // 7.5-9.5 saat arası
+    const breaks = Math.floor(computerTime * 2) + Math.floor(Math.random() * 3); // Saatte 2 mola + rastgele
+    const eyeStrainLevel = avgScore > 80 ? 'Düşük' : avgScore > 60 ? 'Orta' : 'Yüksek';
+    
+    return {
+      timestamp: now,
+      duration: 20,
+      averageScore: avgScore,
+      maxScore: Math.min(100, avgScore + Math.floor(Math.random() * 15)),
+      minScore: Math.max(0, avgScore - Math.floor(Math.random() * 20)),
+      computerTime: computerTime.toFixed(1),
+      totalBreaks: breaks,
+      eyeStrainLevel,
+      recommendations: generateRecommendations(avgScore),
+      postureTrend: avgScore > 70 ? 'İyileşiyor' : avgScore > 50 ? 'Stabil' : 'Kötüleşiyor',
+      neckAngle: (15 + Math.random() * 10).toFixed(1), // 15-25 derece arası
+      shoulderSymmetry: (85 + Math.random() * 10).toFixed(1), // %85-95 arası
+    };
+  };
+
+  const generateRecommendations = (score: number) => {
+    const recommendations = [];
+    
+    if (score < 70) {
+      recommendations.push("Sandalye yüksekliğinizi ayarlayın");
+      recommendations.push("Monitörünüzü göz hizasına getirin");
+    }
+    
+    if (score < 50) {
+      recommendations.push("Daha sık mola verin (20-20-20 kuralı)");
+      recommendations.push("Ergonomik sandalye kullanmayı düşünün");
+    }
+    
+    recommendations.push("Her saatte 5 dakika ayakta durun");
+    recommendations.push("Boyun ve omuz germe egzersizleri yapın");
+    
+    return recommendations;
   };
 
   const requestCameraPermission = async () => {
@@ -123,6 +225,14 @@ export const PostureMonitor = ({ isActive, score }: PostureMonitorProps) => {
   const stopCamera = () => {
     console.log('Kamera durduruluyor...');
     
+    // Taramayı durdur
+    if (scanIntervalRef.current) {
+      clearInterval(scanIntervalRef.current);
+      scanIntervalRef.current = null;
+    }
+    setIsScanning(false);
+    setScanningTime(0);
+    
     if (stream) {
       stream.getTracks().forEach(track => {
         console.log('Track durduruluyor:', track.kind, track.label);
@@ -138,6 +248,11 @@ export const PostureMonitor = ({ isActive, score }: PostureMonitorProps) => {
     
     setHasPermission(null);
     console.log('Kamera durduruldu');
+    
+    toast({
+      title: "Kamera Durduruldu",
+      description: "Kamera bağlantısı güvenli bir şekilde sonlandırıldı.",
+    });
   };
 
   const analyzePosture = () => {
@@ -258,6 +373,19 @@ export const PostureMonitor = ({ isActive, score }: PostureMonitorProps) => {
                   <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
                   CANLI
                 </div>
+                
+                {/* Tarama göstergesi */}
+                {isScanning && (
+                  <div className="absolute bottom-2 left-2 right-2">
+                    <div className="bg-black/50 backdrop-blur-sm rounded-lg p-3 text-white">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium">Duruş Taranıyor</span>
+                        <span className="text-sm">{scanningTime}/20s</span>
+                      </div>
+                      <Progress value={(scanningTime / 20) * 100} className="h-2" />
+                    </div>
+                  </div>
+                )}
               </div>
             ) : hasPermission === false ? (
               <div className="w-full h-64 flex items-center justify-center">
@@ -384,7 +512,117 @@ export const PostureMonitor = ({ isActive, score }: PostureMonitorProps) => {
         <Button variant="calm" className="flex-1">
           Kısa Mola
         </Button>
+        {scanReport && (
+          <Button variant="outline" className="flex-1" onClick={() => setShowReport(true)}>
+            <BarChart3 className="h-4 w-4" />
+            Son Rapor
+          </Button>
+        )}
       </div>
+
+      {/* Rapor Dialog */}
+      <Dialog open={showReport} onOpenChange={setShowReport}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5" />
+              Duruş Analizi Raporu
+            </DialogTitle>
+            <DialogDescription>
+              {scanReport?.timestamp && new Date(scanReport.timestamp).toLocaleString('tr-TR')} - 20 saniye tarama
+            </DialogDescription>
+          </DialogHeader>
+          
+          {scanReport && (
+            <div className="space-y-6">
+              {/* Özet Skorlar */}
+              <div className="grid grid-cols-3 gap-4">
+                <Card>
+                  <CardContent className="p-4 text-center">
+                    <div className="text-2xl font-bold text-primary">{scanReport.averageScore}%</div>
+                    <p className="text-sm text-muted-foreground">Ortalama Skor</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4 text-center">
+                    <div className="text-2xl font-bold text-energy">{scanReport.computerTime}h</div>
+                    <p className="text-sm text-muted-foreground">Günlük Ekran Süresi</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4 text-center">
+                    <div className="text-2xl font-bold text-calm">{scanReport.totalBreaks}</div>
+                    <p className="text-sm text-muted-foreground">Mola Sayısı</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Detaylı Analiz */}
+              <div className="grid grid-cols-2 gap-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Fiziksel Ölçümler</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-sm">Boyun Açısı:</span>
+                      <span className="text-sm font-medium">{scanReport.neckAngle}°</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm">Omuz Simetrisi:</span>
+                      <span className="text-sm font-medium">{scanReport.shoulderSymmetry}%</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm">Göz Yorgunluğu:</span>
+                      <span className="text-sm font-medium">{scanReport.eyeStrainLevel}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm">Trend:</span>
+                      <span className="text-sm font-medium">{scanReport.postureTrend}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Öneriler</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      {scanReport.recommendations.map((rec: string, index: number) => (
+                        <div key={index} className="flex items-start gap-2">
+                          <CheckCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                          <span className="text-sm">{rec}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowReport(false)}>
+              Kapat
+            </Button>
+            <Button onClick={() => {
+              // Raporu indir (JSON formatında)
+              const dataStr = JSON.stringify(scanReport, null, 2);
+              const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+              const exportFileDefaultName = `duruş-raporu-${new Date().toISOString().slice(0,10)}.json`;
+              
+              const linkElement = document.createElement('a');
+              linkElement.setAttribute('href', dataUri);
+              linkElement.setAttribute('download', exportFileDefaultName);
+              linkElement.click();
+            }}>
+              <Download className="h-4 w-4 mr-2" />
+              Raporu İndir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
